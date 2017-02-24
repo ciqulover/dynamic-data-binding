@@ -32,12 +32,12 @@ class Observer {
       configurable: true,
       enumerable: true,
       get: () => {
-        console.log('你访问了 ' + key)
+        // console.log('你访问了 ' + key)
         return val
       },
       set: newVal => {
         if (newVal === val) return
-        console.log(`你设置了 ${key}, 新的值为 ${JSON.stringify(newVal)}`)
+        // console.log(`你设置了 ${key}, 新的值为 ${JSON.stringify(newVal)}`)
         val = newVal
         this.$notify(path || key)
         this.observe(newVal, path)
@@ -80,31 +80,25 @@ class Observer {
   }
 }
 
+
 // allowed to test in browser
 window.Observer = Observer
 
 
 // test
-const a1 = new Observer({
-  name: 'youngwind',
+let a2 = new Observer({
+  name: {
+    firstName: 'shaofeng',
+    lastName: 'liang'
+  },
   age: 25
-});
-
-a1.data.name = {
-  lastName: 'liang',
-  firstName: 'shaofeng'
-};
-
-const lastName = a1.data.name.lastName
-a1.data.name.firstName = 'lalala'
-
-const a3 = new Observer({
-  name: 'youngwind',
-  age: 25
-});
-
-a3.$watch('age', function (age) {
-  console.log(`我的年纪变了，现在已经是：${age}岁了`)
 })
 
-a3.data.age = 100
+a2.$watch('name', function (newName) {
+  console.log('我的姓名发生了变化，可能是姓氏变了，也可能是名字变了。')
+})
+
+a2.data.name.firstName = 'hahaha'
+// 输出：我的姓名发生了变化，可能是姓氏变了，也可能是名字变了。
+a2.data.name.lastName = 'blablabla'
+// 输出：我的姓名发生了变化，可能是姓氏变了，也可能是名字变了。

@@ -55,12 +55,12 @@ var Observer = function () {
         configurable: true,
         enumerable: true,
         get: function get() {
-          console.log('你访问了 ' + key);
+          // console.log('你访问了 ' + key)
           return val;
         },
         set: function set(newVal) {
           if (newVal === val) return;
-          console.log('\u4F60\u8BBE\u7F6E\u4E86 ' + key + ', \u65B0\u7684\u503C\u4E3A ' + JSON.stringify(newVal));
+          // console.log(`你设置了 ${key}, 新的值为 ${JSON.stringify(newVal)}`)
           val = newVal;
           _this2.$notify(path || key);
           _this2.observe(newVal, path);
@@ -121,28 +121,21 @@ var Observer = function () {
 window.Observer = Observer;
 
 // test
-var a1 = new Observer({
-  name: 'youngwind',
+var a2 = new Observer({
+  name: {
+    firstName: 'shaofeng',
+    lastName: 'liang'
+  },
   age: 25
 });
 
-a1.data.name = {
-  lastName: 'liang',
-  firstName: 'shaofeng'
-};
-
-var lastName = a1.data.name.lastName;
-a1.data.name.firstName = 'lalala';
-
-var a3 = new Observer({
-  name: 'youngwind',
-  age: 25
+a2.$watch('name', function (newName) {
+  console.log('我的姓名发生了变化，可能是姓氏变了，也可能是名字变了。');
 });
 
-a3.$watch('age', function (age) {
-  console.log('\u6211\u7684\u5E74\u7EAA\u53D8\u4E86\uFF0C\u73B0\u5728\u5DF2\u7ECF\u662F\uFF1A' + age + '\u5C81\u4E86');
-});
-
-a3.data.age = 100;
+a2.data.name.firstName = 'hahaha';
+// 输出：我的姓名发生了变化，可能是姓氏变了，也可能是名字变了。
+a2.data.name.lastName = 'blablabla';
+// 输出：我的姓名发生了变化，可能是姓氏变了，也可能是名字变了。
 
 },{}]},{},[1]);
