@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Task 5</title>
+</head>
+<body>
+<div id="app">
+  <p>姓名：{{user.name}}</p>
+  <p>年龄：{{user.age}}</p>
+</div>
+
+<p>复制到控制台测试</p>
+<textarea name="test" cols="100" rows="30">
+
+  vm.$watch('user.name', function (newName, oldName) {
+    console.log('name changed, from "' + oldName + '" to "' + newName + '"')
+  })
+
+  vm.user.name = 'ycwalker'
+
+  vm.user = {name : 'ciqu', age: 10}
+
+</textarea>
+<script src="dist/main.js"></script>
+<script>
+  const vm = window.vm = new MVVM({
+    el: '#app',
+    data: {
+      user: {
+        name: 'youngwind',
+        age: 25
+      }
+    }
+  })
+</script>
+</body>
+</html>

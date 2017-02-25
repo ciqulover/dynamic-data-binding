@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Task 4</title>
+</head>
+<body>
+<div id="app">
+  <p>姓名：{{user.name}}</p>
+  <p>年龄：{{user.age}}</p>
+</div>
+<script src="dist/main.js"></script>
+<script>
+  const vm = window.vm = new MVVM({
+    el: '#app',
+    data: {
+      user: {
+        name: 'youngwind',
+        age: 25
+      }
+    }
+  })
+
+  vm.$watch('user.name', function (newName, oldName) {
+    console.log('name changed, from "' + oldName + '" to "' + newName + '"')
+  })
+
+  vm.user.name = 'ycwalker'
+</script>
+</body>
+</html>
