@@ -30,9 +30,7 @@ class Observer {
       configurable: true,
       enumerable: true,
       get: () => {
-
         if (Dep.target) {
-
           dep.depend()
           if (childOb) childOb.dep.depend()
         }

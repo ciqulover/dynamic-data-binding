@@ -29,8 +29,12 @@ var isElementNode = function isElementNode(node) {
 var isTextNode = function isTextNode(node) {
   return node.nodeType == 3;
 };
-var isDirective = function isDirective(attr) {
-  return attr.indexOf('v-') == 0;
+var isDirective = function isDirective(dir) {
+  return dir.indexOf('v-') == 0 || dir.indexOf('@') == 0 || dir.indexOf(':') == 0;
+};
+
+var isEventDirective = function isEventDirective(dir) {
+  return dir.indexOf('v-on:') == 0 || dir.indexOf('@') == 0;
 };
 
 var _splice = Array.prototype.slice;
@@ -43,60 +47,56 @@ var Compile = function () {
     this.$el = isElementNode(el) ? el : document.querySelector(el);
     if (this.$el) {
       this.$fragment = toNodeFragment(this.$el);
-      this.compile(this.$fragment.childNodes);
+      this.compileElements(this.$fragment.childNodes);
       this.$el.appendChild(this.$fragment);
     }
   }
 
   _createClass(Compile, [{
-    key: 'compile',
-    value: function compile(nodes) {
+    key: 'compileElements',
+    value: function compileElements(nodes) {
       var _this = this;
 
       nodes = _splice.call(nodes);
       nodes.forEach(function (node) {
-        if (isElementNode(node)) _this.compileEl(node);else if (isTextNode(node)) {
+        if (isElementNode(node)) _this.compile(node);else if (isTextNode(node)) {
           var reg = /\{\{(.+?)}}/g;
           var match = reg.exec(node.nodeValue);
           if (match) {
-            _this.compileText(node, match[1], match.index, _this.$vm);
+            _this.compileText(node, match[1], match.index);
           }
         }
 
         var childNodes = node.childNodes;
         if (childNodes && childNodes.length) {
-          _this.compile(childNodes);
+          _this.compileElements(childNodes);
         }
       });
     }
   }, {
     key: 'compileText',
-    value: function compileText(node, exp, index, vm) {
-      // console.log(arguments)
-      updater.textUpdater(node, this._getVMVal(vm, exp), '{{' + exp + '}}', index);
-      new _watcher2.default(this.$vm, exp, function (value, oldValue) {
-        updater.textUpdater(node, value, oldValue);
-      });
+    value: function compileText(node, exp, index) {
+      compileUtil.text(node, this.$vm, exp);
     }
   }, {
-    key: 'compileEl',
-    value: function compileEl(node) {
-      // console.log(node.attributes)
+    key: 'compile',
+    value: function compile(node) {
+      var _this2 = this;
+
       var attrs = _splice.call(node.attributes);
       attrs.forEach(function (attr) {
-        // if (isDirective(attr)) console.log(attr)
-
+        var attrName = attr.name;
+        var exp = attr.value;
+        if (isDirective(attrName)) {
+          if (isEventDirective(attrName)) {
+            compileUtil.eventHandler(node, _this2.$vm, exp, attrName);
+          } else {
+            var dir = attrName.slice(2);
+            compileUtil[dir] && compileUtil[dir](node, _this2.$vm, exp);
+          }
+          node.removeAttribute(attrName);
+        }
       });
-    }
-  }, {
-    key: '_getVMVal',
-    value: function _getVMVal(vm, exp) {
-      var val = vm._data;
-      exp = exp.split('.');
-      exp.forEach(function (k) {
-        val = val[k];
-      });
-      return val;
     }
   }]);
 
@@ -104,7 +104,7 @@ var Compile = function () {
 }();
 
 var updater = {
-  textUpdater: function textUpdater(node, value, oldValue, startIndex) {
+  textUpdater: function textUpdater(node, value, oldValue) {
     //todo
     // node.nodeValue = node.nodeValue.replace(oldValue, function (oldValue, offset) {
     //   // if (offset === startIndex) {
@@ -114,6 +114,77 @@ var updater = {
     //   return value
     // })
     node.nodeValue = node.nodeValue.replace(oldValue, value);
+  },
+  htmlUpdater: function htmlUpdater(node, value, oldValue) {
+    node.innerHTML = node.innerHTML.replace(oldValue, value);
+  },
+  modelUpdater: function modelUpdater(node, value, oldValue) {
+    node.value = value;
+  },
+  attrUpdater: function attrUpdater(node, value, oldValue, prop) {
+    node[prop].value = value;
+  }
+};
+
+var compileUtil = {
+  text: function text(node, vm, exp) {
+    this.bind(node, vm, exp, 'text');
+  },
+  html: function html(node, vm, exp) {
+    this.bind(node, vm, exp, 'html');
+  },
+  model: function model(node, vm, exp) {
+    var _this3 = this;
+
+    this.bind(node, vm, exp, 'model');
+    var val = this._getVMVal(vm, exp);
+    var inputHandler = function inputHandler(e) {
+
+      var newValue = e.target.value;
+      if (newValue === val) return;
+
+      _this3._setVMVal(vm, exp, newValue);
+      val = newValue;
+    };
+
+    node.addEventListener('input', inputHandler, false);
+  },
+  bind: function bind(node, vm, exp, dir) {
+
+    var updateFn = updater[dir + 'Updater'];
+    var initValue = dir == 'text' ? '{{' + exp + '}}' : '';
+    updateFn && updateFn(node, this._getVMVal(vm, exp), initValue);
+    new _watcher2.default(vm, exp, function (value, oldValue) {
+      updateFn && updateFn(node, value, oldValue);
+    });
+  },
+  eventHandler: function eventHandler(node, vm, exp, dir) {
+    var eventType = dir.slice(dir.indexOf('@') == 0 ? 1 : 5);
+    var fn = vm.$options.methods && vm.$options.methods[exp];
+    if (eventType && fn) {
+      node.addEventListener(eventType, function () {
+        return fn.call(vm);
+      }, false);
+    }
+  },
+  _getVMVal: function _getVMVal(vm, exp) {
+    var val = vm._data;
+    var segments = exp.split('.');
+    segments.forEach(function (k) {
+      return val = val[k];
+    });
+    return val;
+  },
+  _setVMVal: function _setVMVal(vm, exp, value) {
+    var val = vm._data;
+    var segments = exp.split('.');
+    var l = segments.length;
+
+    segments.forEach(function (k, i) {
+      if (i < l - 1) val = val[k];else {
+        val[k] = value;
+      }
+    });
   }
 };
 
@@ -192,6 +263,7 @@ var MVVM = function () {
     _classCallCheck(this, MVVM);
 
     var data = this._data = options.data;
+    this.$options = options;
     Object.keys(data).forEach(function (key) {
       return _this._proxy(key);
     });
@@ -282,9 +354,7 @@ var Observer = function () {
         configurable: true,
         enumerable: true,
         get: function get() {
-
           if (_dep2.default.target) {
-
             dep.depend();
             if (childOb) childOb.dep.depend();
           }
@@ -362,7 +432,9 @@ var Watcher = function () {
       _dep2.default.target = this;
       var value = this.getter(this.vm);
 
-      if (this.deep) traverse(value);
+      if (this.deep) {
+        traverse(value);
+      }
 
       _dep2.default.target = null;
       return value;
@@ -370,15 +442,17 @@ var Watcher = function () {
   }, {
     key: 'update',
     value: function update() {
-      // console.log('updated')
       this.run();
     }
   }, {
     key: 'run',
     value: function run() {
       var oldValue = this.value;
-      this.value = this.get();
-      if (oldValue !== this.value) this.cb.call(this.vm, this.value, oldValue);
+      var value = this.get();
+      if (value !== oldValue || (typeof value === 'undefined' ? 'undefined' : _typeof(value)) == 'object') {
+        this.cb.call(this.vm, value, oldValue);
+        this.value = value;
+      }
     }
   }]);
 
@@ -403,6 +477,7 @@ function traverse(val) {
 }
 
 function _traverse(val, seen) {
+
   if ((typeof val === 'undefined' ? 'undefined' : _typeof(val)) != 'object') return;
   if (val.__ob__) {
     var depId = val.__ob__.dep.id;

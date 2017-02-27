@@ -8,31 +8,46 @@
 <div id="app">
   <p>姓名：{{user.name}}</p>
   <p>年龄：{{user.age}}</p>
-</div>
 
-<p>复制到控制台测试</p>
-<textarea name="test" cols="100" rows="30">
+  <label>输入姓名:</label>
+  <input type="text" v-model="user.name">
+  <br>
+  <label>输入年龄:</label>
+  <input type="text" v-model="user.age">
 
-  vm.$watch('user.name', function (newName, oldName) {
-    console.log('name changed, from "' + oldName + '" to "' + newName + '"')
-  })
+  <button @click="addAge">年龄涨一岁</button>
+  <p>复制到控制台测试</p>
+  <textarea name="test" cols="100" rows="30">
 
-  vm.user.name = 'ycwalker'
-
-  vm.user = {name : 'ciqu', age: 10}
-
-</textarea>
-<script src="dist/main.js"></script>
-<script>
   const vm = window.vm = new MVVM({
     el: '#app',
     data: {
       user: {
-        name: 'youngwind',
-        age: 25
+        name: 'Lei Jiang',
+        age: 10
+      }
+    },
+    methods: {
+      addAge() {
+        this.user.age++
       }
     }
   })
-</script>
+
+
+  vm.$watch('user', function (newUser, oldUser) {
+    console.log('name changed, from "' + JSON.stringify(oldUser) + '" to "' + JSON.stringify(newUser) + '"')
+  }, {
+    deep: true
+  })
+
+  vm.user.name = 'ycwalker'
+
+  vm.user = {name: 'ciqu', age: 10}
+
+</textarea>
+</div>
+
+<script src="dist/main.js"></script>
 </body>
 </html>

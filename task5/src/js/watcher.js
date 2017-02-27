@@ -23,21 +23,25 @@ class Watcher {
     Dep.target = this
     const value = this.getter(this.vm)
 
-    if (this.deep) traverse(value)
+    if (this.deep) {
+      traverse(value)
+    }
 
     Dep.target = null
     return value
   }
 
   update() {
-    // console.log('updated')
     this.run()
   }
 
   run() {
     const oldValue = this.value
-    this.value = this.get()
-    if (oldValue !== this.value) this.cb.call(this.vm, this.value, oldValue)
+    const value = this.get()
+    if (value !== oldValue || typeof value == 'object') {
+      this.cb.call(this.vm, value, oldValue)
+      this.value = value
+    }
   }
 }
 
@@ -58,6 +62,7 @@ function traverse(val) {
 }
 
 function _traverse(val, seen) {
+
   if (typeof val != 'object') return
   if (val.__ob__) {
     const depId = val.__ob__.dep.id

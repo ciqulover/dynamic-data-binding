@@ -7,6 +7,7 @@ import Watcher from './watcher'
 class MVVM {
   constructor(options) {
     const data = this._data = options.data
+    this.$options = options
     Object.keys(data).forEach(key => this._proxy(key))
     observe(data)
     new Compile(options.el || document.body, this)
@@ -27,6 +28,7 @@ class MVVM {
 }
 
 window.MVVM = MVVM
+
 
 
 
